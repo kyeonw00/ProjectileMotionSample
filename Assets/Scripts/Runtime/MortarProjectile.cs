@@ -15,6 +15,14 @@
 
 using UnityEngine;
 
+public static class GameObjectUtils
+{
+    public static bool ContainsMask(LayerMask container, LayerMask containee)
+    {
+        return ((1 << container) & containee) > 0;
+    }
+}
+
 public class MortarProjectile : MonoBehaviour
 {
     private static readonly Collider[] HitColliders = new Collider[12];
@@ -26,19 +34,13 @@ public class MortarProjectile : MonoBehaviour
     [SerializeField] private float explosionRadius;
 
     private float m_GravityScale = 1f;
-    
-    public void Setup(Vector3 initialVelocity, float gravityScale)
-    {
-        rigidbody.velocity = initialVelocity;
-        
-        m_GravityScale = gravityScale;
-    }
 
     private void FixedUpdate()
     {
         if (rigidbody.isKinematic)
             return;
         
+        // Add vertical axis acceleration; simulates gravity
         rigidbody.AddForce(Vector3.down * m_GravityScale, ForceMode.Acceleration);
     }
 
@@ -52,7 +54,8 @@ public class MortarProjectile : MonoBehaviour
 
     private void OnCollisionEnter(Collision other)
     {
-        if (!ContainsMask(other.gameObject.layer, enemyLayer)) return;
+        if (!GameObjectUtils.ContainsMask(other.gameObject.layer, enemyLayer))
+            return;
         
         rigidbody.isKinematic = true;
         collider.enabled = false;
@@ -70,9 +73,10 @@ public class MortarProjectile : MonoBehaviour
         
         Destroy(gameObject, 3f);
     }
-
-    private static bool ContainsMask(LayerMask container, LayerMask containee)
+    
+    public void Setup(Vector3 initialVelocity, float gravityScale)
     {
-        return ((1 << container) & containee) > 0;
+        rigidbody.velocity = initialVelocity;
+        m_GravityScale = gravityScale;
     }
 }

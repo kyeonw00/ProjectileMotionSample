@@ -18,53 +18,50 @@ using UnityEngine;
 public class MortarSentry : MonoBehaviour
 {
     [Header("[Mortar Sentry]")]
-    [SerializeField] private float attackRange; // max attack range
-    [SerializeField] private float minAttackRange; // min attack range
-    [SerializeField] private float fireRate; // fire rate per minute
-    [SerializeField] private float projectileTimeOfFlight; // projectile's total flight of time
-    
-    [Space]
-    [SerializeField] private float gravityScale;
-    [SerializeField] private float barrelRotateSpeed;
+    [SerializeField] private float attackRange; // 최대 공격 사거리
+    [SerializeField] private float minAttackRange; // 최소 공격 사거리
+    [SerializeField] private float fireRate; // 분당 공격 횟수
+    [SerializeField] private Transform bodyTransform; // 센트리 몸통 트랜스폼
+    [SerializeField] private Transform barrelTransform; // 센트리 포신 트랜스폼
+    [SerializeField] private float sentryRotateSpeed; // 센트리 회전 속도 (클수록 빠르게 회전)
 
     [Space]
-    [SerializeField] private Transform bodyTransform;
-    [SerializeField] private MortarProjectile projectilePrefab;
+    [SerializeField] private MortarProjectile projectilePrefab; // 투사체 프리팹
+    [SerializeField] private float projectileTimeOfFlight; // 투사체 체공 시간
+    [SerializeField] private float projectileGravity = 9.82f; // 투사체 중력 가중치
 
     [Space]
     [SerializeField] private Collider currentTarget;
 
+    private Quaternion m_BarrelDefaultRotation;
     private float m_LastFireTime = -1f;
     
     public float AttackRange => attackRange;
     public float MinAttackRange => minAttackRange;
+
+    private void Start()
+    {
+        m_BarrelDefaultRotation = barrelTransform.localRotation;
+    }
 
     private void Update()
     {
         if (currentTarget == null)
             return;
         
-        var launchPoint = transform.position;
-        var impactPoint = currentTarget.transform.position;
-            
-        var displacement = impactPoint - launchPoint;
-        var displacementXZ = new Vector3(displacement.x, 0f, displacement.z);
-        var distanceXZ = displacementXZ.magnitude;
-        var horizontalVelocity = distanceXZ / projectileTimeOfFlight;
-        var verticalVelocity =
-            (displacement.y + 0.5f * gravityScale * (projectileTimeOfFlight * projectileTimeOfFlight)) / projectileTimeOfFlight;
-        var velocity = Mathf.Sqrt(horizontalVelocity * horizontalVelocity + verticalVelocity * verticalVelocity);
-            
-        var pitch = Mathf.Atan2(verticalVelocity, horizontalVelocity);
-        var yaw = Mathf.Atan2(displacement.z, displacement.x);
-        var horizontalDirection = new Vector3(Mathf.Cos(yaw), 0f, Mathf.Sin(yaw));
-        var launchDirection = horizontalDirection * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
-        var launchVelocity = launchDirection * velocity;
-
-        var rotateDelta = barrelRotateSpeed * Time.deltaTime;
+        var launchPoint = transform.position; // 발사 위치
+        var impactPoint = currentTarget.transform.position; // 목표 위치
         
-        bodyTransform.rotation = Quaternion.RotateTowards(
-            bodyTransform.rotation, Quaternion.LookRotation(displacementXZ.normalized, Vector3.up), rotateDelta);
+        // 포탄 초기속도 계산
+        PhysicsUtils.TryFindProjectileInitialVelocity(
+            launchPoint, impactPoint, projectileGravity, projectileTimeOfFlight,
+            out var launchDirection, out var launchVelocity);
+
+        var rotateDelta = sentryRotateSpeed * Time.deltaTime;
+        
+        // note:
+        //  기획상 센트리의 Transform.up이 항상 Vector3.up을 바라봄
+        //  별도의 로컬 변환을 고려할 필요 없음
             
         FireProjectile(launchPoint, launchVelocity);
     }
@@ -77,6 +74,6 @@ public class MortarSentry : MonoBehaviour
         m_LastFireTime = Time.time;
 
         var projectile = Instantiate(projectilePrefab, launchPoint, Quaternion.identity, null);
-        projectile.Setup(launchVelocity, gravityScale);
+        projectile.Setup(launchVelocity, projectileGravity);
     }
 }
