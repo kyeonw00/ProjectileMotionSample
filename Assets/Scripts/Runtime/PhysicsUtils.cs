@@ -21,13 +21,14 @@ using UnityEngine;
 public static class PhysicsUtils
 {
     /// <summary>
-    /// Find the initial velocity of projectile to reach at Destination from Origin.
+    /// 발사 지점 <paramref name="origin"/>으로 부터 도착 지점 <paramref name="destination"/> 까지 도달하기 위한 투사체의
+    /// 초기 발사 속도 <paramref name="initialVelocity"/>를 계산합니다.
     /// </summary>
-    /// <param name="origin">Origin position of projectile motion.</param>
-    /// <param name="destination">Destination position of projectile motion.</param>
-    /// <param name="gravity">Scale of gravity in Y-Axis.</param>
-    /// <param name="timeOfFlight">Total time for the projectile remains in the air.</param>
-    /// <param name="initialVelocity">Initial velocity so that projectile reach out to destination.</param>
+    /// <param name="origin">발사 지점</param>
+    /// <param name="destination">도착 지점</param>
+    /// <param name="gravity">발사체에 가해지는 중력 크기</param>
+    /// <param name="timeOfFlight">투사체의 체공 시간</param>
+    /// <param name="initialVelocity">초기 발사 속도</param>
     public static bool TryFindProjectileInitialVelocity(
         Vector3 origin, Vector3 destination, float gravity, float timeOfFlight,
         out Vector3 launchDirection, out Vector3 initialVelocity)
@@ -38,6 +39,10 @@ public static class PhysicsUtils
         var displacement = destination - origin;
         var displacementXZ = new Vector3(displacement.x, 0f, displacement.z);
 
+        // 거리가 너무 가까우면 해를 구할 수 없음
+        if (displacementXZ.sqrMagnitude < float.Epsilon)
+            return false;
+        
         var horizontalVelocity = displacementXZ.magnitude / timeOfFlight;
         var verticalVelocity = (displacement.y + 0.5f * gravity * (timeOfFlight * timeOfFlight)) / timeOfFlight;
         var velocity = Mathf.Sqrt(horizontalVelocity * horizontalVelocity + verticalVelocity * verticalVelocity);
@@ -50,5 +55,14 @@ public static class PhysicsUtils
         initialVelocity = launchDirection * velocity;
 
         return true;
+    }
+
+    public static bool TryFindProjectilePoints(Vector3 start, Vector3 end, float initialVelocity, float launchAngle,
+        int segmentCount, ref Vector3[] points)
+    {
+        var sin = Mathf.Sin(launchAngle * Mathf.Deg2Rad);
+        var cos = Mathf.Cos(launchAngle * Mathf.Deg2Rad);
+        
+        return false;
     }
 }
