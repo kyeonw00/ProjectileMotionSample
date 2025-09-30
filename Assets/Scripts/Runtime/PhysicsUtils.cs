@@ -52,17 +52,10 @@ public static class PhysicsUtils
 
         launchDirection =
             new Vector3(Mathf.Cos(yaw), 0f, Mathf.Sin(yaw)) * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
+        launchDirection.Normalize();
+        
         initialVelocity = launchDirection * velocity;
 
         return true;
-    }
-
-    public static bool TryFindProjectilePoints(Vector3 start, Vector3 end, float initialVelocity, float launchAngle,
-        int segmentCount, ref Vector3[] points)
-    {
-        var sin = Mathf.Sin(launchAngle * Mathf.Deg2Rad);
-        var cos = Mathf.Cos(launchAngle * Mathf.Deg2Rad);
-        
-        return false;
     }
 }

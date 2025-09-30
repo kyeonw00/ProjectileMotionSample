@@ -27,5 +27,14 @@ public class MortarSentryEditor : Editor
         Handles.color = Color.yellow;
         Handles.DrawWireDisc(transform.position, transform.up, mortarSentry.AttackRange);
         Handles.DrawWireDisc(transform.position, transform.up, mortarSentry.MinAttackRange);
+
+        Handles.color = Color.blue;
+        Handles.DrawLine(transform.position, transform.position + mortarSentry.LaunchVelocity, 0.5f);
+
+        Handles.color = Color.red;
+        Handles.DrawLine(
+            mortarSentry.BarrelTransform.position,
+            mortarSentry.BarrelTransform.position + mortarSentry.BarrelTransform.transform.up * 3f,
+            0.5f);
     }
 }

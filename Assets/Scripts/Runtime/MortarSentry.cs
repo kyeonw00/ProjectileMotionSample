@@ -17,6 +17,9 @@ using UnityEngine;
 
 public class MortarSentry : MonoBehaviour
 {
+    private const float MinimumPitchDegree = 0f;
+    private const float MaximumPitchDegree = 44f;
+    
     [Header("[Mortar Sentry]")]
     [SerializeField] private float attackRange; // 최대 공격 사거리
     [SerializeField] private float minAttackRange; // 최소 공격 사거리
@@ -33,15 +36,21 @@ public class MortarSentry : MonoBehaviour
     [Space]
     [SerializeField] private Collider currentTarget;
 
-    private Quaternion m_BarrelDefaultRotation;
     private float m_LastFireTime = -1f;
+    private Quaternion m_BarrelBaseLocalRotation;
+    private float m_BodyYawDeg;
+    private float m_BarrelPitchDeg;
     
     public float AttackRange => attackRange;
     public float MinAttackRange => minAttackRange;
+    public Vector3 LaunchVelocity { get; private set; }
+    public Transform BarrelTransform => barrelTransform;
 
     private void Start()
     {
-        m_BarrelDefaultRotation = barrelTransform.localRotation;
+        m_BarrelBaseLocalRotation = barrelTransform.localRotation;
+        m_BarrelPitchDeg = 0f;
+        m_BodyYawDeg = bodyTransform.eulerAngles.y;
     }
 
     private void Update()
@@ -57,12 +66,30 @@ public class MortarSentry : MonoBehaviour
             launchPoint, impactPoint, projectileGravity, projectileTimeOfFlight,
             out var launchDirection, out var launchVelocity);
 
+        LaunchVelocity = launchVelocity;
+
+        // 포신 및 포열 발사각에 맞도록 컨트롤
         var rotateDelta = sentryRotateSpeed * Time.deltaTime;
+        var directionXZ = new Vector3(launchDirection.x, 0f, launchDirection.z);
         
-        // note:
-        //  기획상 센트리의 Transform.up이 항상 Vector3.up을 바라봄
-        //  별도의 로컬 변환을 고려할 필요 없음
-            
+        // 센트리 몸통의 Transform,.forward가 launch direction을 바라보록 Yaw만 컨트롤
+        var targetYawDeg = Mathf.Rad2Deg * Mathf.Atan2(directionXZ.x, directionXZ.z);
+        m_BodyYawDeg = Mathf.MoveTowardsAngle(m_BodyYawDeg, targetYawDeg, rotateDelta);
+        bodyTransform.rotation = Quaternion.AngleAxis(m_BodyYawDeg, Vector3.up);;
+        
+        var localLaunchDir = bodyTransform.InverseTransformDirection(launchDirection).normalized;
+        var localInBase = Quaternion.Inverse(m_BarrelBaseLocalRotation) * localLaunchDir;
+        var targetPitchDeg = Mathf.Rad2Deg * Mathf.Atan2(localInBase.z, localInBase.y);
+        targetPitchDeg = Mathf.Clamp(targetPitchDeg, MinimumPitchDegree, MaximumPitchDegree);
+        m_BarrelPitchDeg = Mathf.MoveTowardsAngle(m_BarrelPitchDeg, targetPitchDeg, rotateDelta);
+        barrelTransform.localRotation = m_BarrelBaseLocalRotation * Quaternion.AngleAxis(m_BarrelPitchDeg, Vector3.right);
+        
+        Debug.Log($"LocalLaunchDir: {localLaunchDir}");
+        Debug.Log($"LocalInBase: {localInBase}");
+        Debug.Log($"TargetPitch: {targetPitchDeg}, CurrentPitch: {m_BarrelPitchDeg}");
+        Debug.Log($"RotateDelta: {rotateDelta}");
+        Debug.Log($"------------------------------------------------------------------");
+        
         FireProjectile(launchPoint, launchVelocity);
     }
 

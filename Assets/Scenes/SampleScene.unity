@@ -171,11 +171,12 @@ MonoBehaviour:
   attackRange: 3
   minAttackRange: 20
   fireRate: 60
-  projectileTimeOfFlight: 3.5
-  gravityScale: 19.64
-  barrelRotateSpeed: 30
   bodyTransform: {fileID: 1913483029}
+  barrelTransform: {fileID: 505683519}
+  sentryRotateSpeed: 30
   projectilePrefab: {fileID: 3771059433629174839, guid: 5774b75642ba6eb4a8aaa6097276fc9a, type: 3}
+  projectileTimeOfFlight: 3.5
+  projectileGravity: 9.82
   currentTarget: {fileID: 1279683219}
 --- !u!1 &505683518
 GameObject:
@@ -204,13 +205,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 505683518}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.23136126, y: -0, z: -0, w: 0.9728679}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1913483029}
-  m_LocalEulerAnglesHint: {x: 26.754, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &505683521
 MeshFilter:
   m_ObjectHideFlags: 10
