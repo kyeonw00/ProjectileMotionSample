@@ -15,14 +15,6 @@
 
 using UnityEngine;
 
-public static class GameObjectUtils
-{
-    public static bool ContainsMask(LayerMask container, LayerMask containee)
-    {
-        return ((1 << container) & containee) > 0;
-    }
-}
-
 public class MortarProjectile : MonoBehaviour
 {
     private static readonly Collider[] HitColliders = new Collider[12];
@@ -40,7 +32,7 @@ public class MortarProjectile : MonoBehaviour
         if (rigidbody.isKinematic)
             return;
         
-        // Add vertical axis acceleration; simulates gravity
+        // 수직 방향 가속도(중력) 시뮬레이션
         rigidbody.AddForce(Vector3.down * m_GravityScale, ForceMode.Acceleration);
     }
 
@@ -49,18 +41,22 @@ public class MortarProjectile : MonoBehaviour
         if (rigidbody.isKinematic)
             return;
         
+        // transform.forward가 이동 방향 바라보도록 회전
         transform.rotation = Quaternion.Euler(90, 0, 0) * Quaternion.LookRotation(rigidbody.velocity);
     }
 
     private void OnCollisionEnter(Collision other)
     {
-        if (!GameObjectUtils.ContainsMask(other.gameObject.layer, enemyLayer))
+        var targetLayer = (LayerMask)other.gameObject.layer;
+        if (!targetLayer.ContainsMask(enemyLayer))
             return;
         
+        // 임시 비활성화
         rigidbody.isKinematic = true;
         collider.enabled = false;
         rendererParent.SetActive(false);
         
+        // 폭발 반경 내에 데미지 적용
         var hitCount = Physics.OverlapSphereNonAlloc(
             transform.position, explosionRadius, HitColliders, enemyLayer, QueryTriggerInteraction.Ignore);
         for (var i = 0; i < hitCount; i++)
@@ -71,6 +67,7 @@ public class MortarProjectile : MonoBehaviour
             unit.TakeDamage(0f);
         }
         
+        // 실제 오브젝트 파괴는 이펙트 처리 이후에 실행되도록
         Destroy(gameObject, 3f);
     }
     

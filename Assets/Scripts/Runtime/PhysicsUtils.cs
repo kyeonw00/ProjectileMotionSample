@@ -28,13 +28,14 @@ public static class PhysicsUtils
     /// <param name="destination">도착 지점</param>
     /// <param name="gravity">발사체에 가해지는 중력 크기</param>
     /// <param name="timeOfFlight">투사체의 체공 시간</param>
+    /// <param name="launchDirection">발사 방향(월드 기준)</param>
     /// <param name="initialVelocity">초기 발사 속도</param>
     public static bool TryFindProjectileInitialVelocity(
         Vector3 origin, Vector3 destination, float gravity, float timeOfFlight,
-        out Vector3 launchDirection, out Vector3 initialVelocity)
+        out Vector3 launchDirection, out float initialVelocity)
     {
         launchDirection = Vector3.zero;
-        initialVelocity = Vector3.zero;
+        initialVelocity = 0f;
 
         var displacement = destination - origin;
         var displacementXZ = new Vector3(displacement.x, 0f, displacement.z);
@@ -43,18 +44,19 @@ public static class PhysicsUtils
         if (displacementXZ.sqrMagnitude < float.Epsilon)
             return false;
         
+        // 2차원 평면 기준으로 우선 수직/수평 운동량 계산
         var horizontalVelocity = displacementXZ.magnitude / timeOfFlight;
         var verticalVelocity = (displacement.y + 0.5f * gravity * (timeOfFlight * timeOfFlight)) / timeOfFlight;
-        var velocity = Mathf.Sqrt(horizontalVelocity * horizontalVelocity + verticalVelocity * verticalVelocity);
-
+        initialVelocity = Mathf.Sqrt(horizontalVelocity * horizontalVelocity + verticalVelocity * verticalVelocity);
+        
+        // 3차원 기준 회전각 성분 계산
         var pitch = Mathf.Atan2(verticalVelocity, horizontalVelocity);
         var yaw = Mathf.Atan2(displacement.z, displacement.x);
 
+        // 계산된 성분 조합
         launchDirection =
             new Vector3(Mathf.Cos(yaw), 0f, Mathf.Sin(yaw)) * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
         launchDirection.Normalize();
-        
-        initialVelocity = launchDirection * velocity;
 
         return true;
     }

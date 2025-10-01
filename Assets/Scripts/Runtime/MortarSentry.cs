@@ -61,36 +61,32 @@ public class MortarSentry : MonoBehaviour
         var launchPoint = transform.position; // 발사 위치
         var impactPoint = currentTarget.transform.position; // 목표 위치
         
-        // 포탄 초기속도 계산
+        // 포탄 초기 속도/방향 계산
         PhysicsUtils.TryFindProjectileInitialVelocity(
             launchPoint, impactPoint, projectileGravity, projectileTimeOfFlight,
             out var launchDirection, out var launchVelocity);
 
-        LaunchVelocity = launchVelocity;
+        LaunchVelocity = launchDirection * launchVelocity;
+        
+        // 포탄 발사
+        FireProjectile(launchPoint, LaunchVelocity);
 
-        // 포신 및 포열 발사각에 맞도록 컨트롤
+        // 포신 및 포열의 방향 발사각에 맞도록 컨트롤
         var rotateDelta = sentryRotateSpeed * Time.deltaTime;
         var directionXZ = new Vector3(launchDirection.x, 0f, launchDirection.z);
         
-        // 센트리 몸통의 Transform,.forward가 launch direction을 바라보록 Yaw만 컨트롤
+        // 포신은 Yaw(Y-Axis)만 회전
         var targetYawDeg = Mathf.Rad2Deg * Mathf.Atan2(directionXZ.x, directionXZ.z);
         m_BodyYawDeg = Mathf.MoveTowardsAngle(m_BodyYawDeg, targetYawDeg, rotateDelta);
         bodyTransform.rotation = Quaternion.AngleAxis(m_BodyYawDeg, Vector3.up);;
         
+        // 포열은 Pitch(X-Axis)만 회전
         var localLaunchDir = bodyTransform.InverseTransformDirection(launchDirection).normalized;
         var localInBase = Quaternion.Inverse(m_BarrelBaseLocalRotation) * localLaunchDir;
         var targetPitchDeg = Mathf.Rad2Deg * Mathf.Atan2(localInBase.z, localInBase.y);
         targetPitchDeg = Mathf.Clamp(targetPitchDeg, MinimumPitchDegree, MaximumPitchDegree);
         m_BarrelPitchDeg = Mathf.MoveTowardsAngle(m_BarrelPitchDeg, targetPitchDeg, rotateDelta);
         barrelTransform.localRotation = m_BarrelBaseLocalRotation * Quaternion.AngleAxis(m_BarrelPitchDeg, Vector3.right);
-        
-        Debug.Log($"LocalLaunchDir: {localLaunchDir}");
-        Debug.Log($"LocalInBase: {localInBase}");
-        Debug.Log($"TargetPitch: {targetPitchDeg}, CurrentPitch: {m_BarrelPitchDeg}");
-        Debug.Log($"RotateDelta: {rotateDelta}");
-        Debug.Log($"------------------------------------------------------------------");
-        
-        FireProjectile(launchPoint, launchVelocity);
     }
 
     private void FireProjectile(Vector3 launchPoint, Vector3 launchVelocity)
