@@ -19,22 +19,80 @@ using UnityEngine;
 [CustomEditor(typeof(MortarSentry))]
 public class MortarSentryEditor : Editor
 {
+    private MortarSentry m_MortarSentry;
+    
+    private int m_TrajectorySamplingCount = 16;
+    private Vector3[] m_MinimumRangeTrajectoryPoints;
+    private Vector3[] m_MaximumRangeTrajectoryPoints;
+
+    private void OnEnable()
+    {
+        m_MortarSentry = (MortarSentry)target;
+        
+        UpdateMinMaxRangeTrajectories();
+    }
+
+    private void OnValidate()
+    {
+        UpdateMinMaxRangeTrajectories();
+    }
+
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+        
+        m_TrajectorySamplingCount = EditorGUILayout.DelayedIntField("Trajectory Sampling Count", m_TrajectorySamplingCount);
+    }
+
     private void OnSceneGUI()
     {
-        var mortarSentry = (MortarSentry)target;
-        var transform = mortarSentry.transform;
+        var transform = m_MortarSentry.transform;
 
+        // 최소 - 최대 공격 사거리 범위 비주얼라이징
         Handles.color = Color.yellow;
-        Handles.DrawWireDisc(transform.position, transform.up, mortarSentry.AttackRange);
-        Handles.DrawWireDisc(transform.position, transform.up, mortarSentry.MinAttackRange);
+        Handles.DrawWireDisc(transform.position, transform.up, m_MortarSentry.AttackRange);
+        Handles.DrawWireDisc(transform.position, transform.up, m_MortarSentry.MinAttackRange);
+        
+        // 최소 사거리 궤적 비주얼라이징
+        DrawTrajectory(
+            m_MinimumRangeTrajectoryPoints, Color.magenta, 2f);
+        
+        // 최대 사거리 궤적 비주얼라이징
+        DrawTrajectory(
+            m_MaximumRangeTrajectoryPoints, Color.cyan, 2f);
+    }
 
-        Handles.color = Color.blue;
-        Handles.DrawLine(transform.position, transform.position + mortarSentry.LaunchVelocity, 0.5f);
+    private void UpdateMinMaxRangeTrajectories()
+    {
+        var transform = m_MortarSentry.transform;
+        var gravity = m_MortarSentry.ProjectileGravity;
+        var timeOfFlight = m_MortarSentry.ProjectileTimeOfFlight;
+        
+        // 최소 거리 궤적 계산
+        m_MinimumRangeTrajectoryPoints = new Vector3[m_TrajectorySamplingCount];
 
-        Handles.color = Color.red;
-        Handles.DrawLine(
-            mortarSentry.BarrelTransform.position,
-            mortarSentry.BarrelTransform.position + mortarSentry.BarrelTransform.transform.up * 3f,
-            0.5f);
+        var minRangeDestination = transform.position + transform.forward * m_MortarSentry.MinAttackRange;
+        PhysicsUtils.GetTrajectoryPoints(
+            transform.position, minRangeDestination, gravity, timeOfFlight,
+            m_MinimumRangeTrajectoryPoints);
+        
+        // 최대 거리 궤적 계산
+        m_MaximumRangeTrajectoryPoints = new Vector3[m_TrajectorySamplingCount];
+
+        var maxRangeDestination = transform.position + transform.forward * m_MortarSentry.AttackRange;
+        PhysicsUtils.GetTrajectoryPoints(
+            transform.position, maxRangeDestination, gravity, timeOfFlight,
+            m_MaximumRangeTrajectoryPoints);
+    }
+
+    private void DrawTrajectory(Vector3[] trajectoryPoints, Color color, float thickness = 0.5f)
+    {
+        Handles.color = color;
+        
+        for (var i = 1; i < trajectoryPoints.Length; i++)
+        {
+            Handles.DrawLine(
+                trajectoryPoints[i - 1], trajectoryPoints[i], thickness);
+        }
     }
 }

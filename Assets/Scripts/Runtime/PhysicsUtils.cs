@@ -22,7 +22,7 @@ public static class PhysicsUtils
 {
     /// <summary>
     /// 발사 지점 <paramref name="origin"/>으로 부터 도착 지점 <paramref name="destination"/> 까지 도달하기 위한 투사체의
-    /// 초기 발사 속도 <paramref name="initialVelocity"/>를 계산합니다.
+    /// 발사 방향 <paramref name="launchDirection"/>과 초기 발사 속도 <paramref name="initialVelocity"/>를 계산합니다.
     /// </summary>
     /// <param name="origin">발사 지점</param>
     /// <param name="destination">도착 지점</param>
@@ -42,7 +42,10 @@ public static class PhysicsUtils
 
         // 거리가 너무 가까우면 해를 구할 수 없음
         if (displacementXZ.sqrMagnitude < float.Epsilon)
+        {
+            Debug.LogWarning("거리가 너무 가깝습니다! (발사 가능한 궤적 도출 불가)");
             return false;
+        }
         
         // 2차원 평면 기준으로 우선 수직/수평 운동량 계산
         var horizontalVelocity = displacementXZ.magnitude / timeOfFlight;
@@ -59,5 +62,41 @@ public static class PhysicsUtils
         launchDirection.Normalize();
 
         return true;
+    }
+
+    /// <summary>
+    /// 포물선 궤적의 위치들을 샘플링하여 반환합니다.
+    /// </summary>
+    /// <param name="origin">발사 지점</param>
+    /// <param name="destination">탄착 지점</param>
+    /// <param name="gravity">중력 크기</param>
+    /// <param name="timeOfFlight">투사체의 체공 시간</param>
+    /// <param name="resultTrajectoryPoints">샘플링된 궤적 내 포인트</param>
+    public static void GetTrajectoryPoints(
+        Vector3 origin, Vector3 destination, float gravity, float timeOfFlight, Vector3[] resultTrajectoryPoints)
+    {
+        var samplingPointCount = resultTrajectoryPoints.Length;
+        if (samplingPointCount <= 5)
+        {
+            Debug.LogWarning($"궤적 샘플링 포인트의 개수가 너무 적습니다!(input: {samplingPointCount})");
+            return;
+        }
+
+        if (!TryFindProjectileInitialVelocity(origin, destination, gravity, timeOfFlight,
+                out var launchDirection, out var launchVelocity))
+        {
+            Debug.LogError("주어진 설정에 충족되는 발사 가능한 옵션을 찾을 수 없습니다.");
+            return;
+        }
+        
+        var timeStep = timeOfFlight / (samplingPointCount - 1); // 포인트 간 시간 간격
+        var initialVelocity = launchDirection * launchVelocity; // 발사 속도
+        var gravityVector = Vector3.down * gravity; // 중력 상수
+
+        for (var i = 0; i < samplingPointCount; i++)
+        {
+            var t = timeStep * i;
+            resultTrajectoryPoints[i] = origin + initialVelocity * t + 0.5f * gravityVector * (t * t);
+        }
     }
 }

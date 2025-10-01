@@ -43,6 +43,8 @@ public class MortarSentry : MonoBehaviour
     
     public float AttackRange => attackRange;
     public float MinAttackRange => minAttackRange;
+    public float ProjectileGravity => projectileGravity;
+    public float ProjectileTimeOfFlight => projectileTimeOfFlight;
     public Vector3 LaunchVelocity { get; private set; }
     public Transform BarrelTransform => barrelTransform;
 
